@@ -4,6 +4,7 @@ const crypto = require('crypto')
 const sendMail = require('../utils/send-mail')
 const { generateAccessToken, generateRefreshToken } = require('../middlewares/jwt')
 const asyncHandler = require('express-async-handler')
+const product = require('../models/product')
 const register = asyncHandler(async (req, res) => {
     const { email, password, firstName, lastName } = req.body
     if (!email || !password || !firstName || !lastName) {
@@ -175,6 +176,47 @@ const updateUserByAdmin = asyncHandler(async (req, res) => {
     })
 })
 
+const updateUserAddress = asyncHandler(async (req, res) => {
+    const { _id } = req.user
+    if (!req.body.address) throw Error("Missing Inputs !")
+    const response = await User.findByIdAndUpdate(_id, { $push: { address: req.body.address } }, { new: true })
+    return res.status(200).json({
+        success: response ? true : false,
+        result: response ? response : 'Something went wrong !'
+    })
+})
+
+
+const updateUserCart = asyncHandler(async (req, res) => {
+    const { _id } = req.user
+    const { pid, quantity, color } = req.body
+    if (!pid || !quantity || !color) throw Error("Missing Inputs !")
+    const user = await User.findById(_id)
+    const alreadyProduct = user.cart.find(el => el.product.toString() === pid)
+    if (alreadyProduct) {
+        if (alreadyProduct.color === color) {
+            const response = await User.updateOne({ cart: { $elemMatch: alreadyProduct } }, { $set: { "cart.$.quantity": alreadyProduct.quantity + +quantity } }, { new: true })
+            return res.status(200).json({
+                success: response ? true : false,
+                result: response ? response : 'Something went wrong !'
+            })
+        } else {
+            const response = await User.findByIdAndUpdate(_id, { $push: { cart: { product: pid, quantity, color } } }, { new: true })
+            return res.status(200).json({
+                success: response ? true : false,
+                result: response ? response : 'Something went wrong !'
+            })
+        }
+    } else {
+        const response = await User.findByIdAndUpdate(_id, { $push: { cart: { product: pid, quantity, color } } }, { new: true })
+        return res.status(200).json({
+            success: response ? true : false,
+            result: response ? response : 'Something went wrong !'
+        })
+    }
+})
+
+
 module.exports = {
-    register, login, getOne, refreshToken, logout, forgotPassword, resetPassword, getUsers, updateUser, updateUserByAdmin, deleteUser
+    register, login, getOne, refreshToken, logout, forgotPassword, resetPassword, getUsers, updateUser, updateUserByAdmin, deleteUser, updateUserAddress, updateUserCart
 }
