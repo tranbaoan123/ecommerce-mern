@@ -128,6 +128,7 @@ const uploadImagesProduct = asyncHandler(async (req, res) => {
         mes: response ? response : 'Something went wrong'
     })
 })
+
 module.exports = {
     createProduct, getProduct, getAllProduct, updateProduct, deleteProduct, ratings, uploadImagesProduct
 }
